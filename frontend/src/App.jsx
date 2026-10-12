@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import axios from 'axios';
 
+// Get backend URL from Vercel environment variables or fall back to Render production
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://syncspace-fast.onrender.com';
+const WS_URL = BACKEND_URL.replace(/^http/, 'ws') + '/ws';
+
 const LANGUAGES = [
   {
     label: 'JavaScript',
@@ -80,11 +84,9 @@ export default function App() {
     }
 
     setWsStatus('connecting');
-    const host = window.location.hostname || 'localhost';
-    const wsUrl = `ws://${host}:8000/ws`;
 
     try {
-      const ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(WS_URL);
       socketRef.current = ws;
 
       ws.onopen = () => {
@@ -98,7 +100,7 @@ export default function App() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           if (data.type === 'init') {
             setCurrentUser(data.self);
             if (Array.isArray(data.users)) setUsers(data.users);
@@ -245,10 +247,9 @@ export default function App() {
     if (loading) return;
     setLoading(true);
     setExecutionMeta({ status: 'running' });
-    const host = window.location.hostname || 'localhost';
 
     try {
-      const response = await axios.post(`http://${host}:8000/execute`, {
+      const response = await axios.post(`${BACKEND_URL}/execute`, {
         language,
         code
       });
@@ -263,7 +264,7 @@ export default function App() {
       });
     } catch (err) {
       const errMsg = err.response?.data?.detail || err.message || 'Error executing code.';
-      setOutput(`Execution Error:\n${errMsg}\n\nPlease check if FastAPI backend is running on http://localhost:8000.`);
+      setOutput(`Execution Error:\n${errMsg}\n\nPlease check if FastAPI backend is running on ${BACKEND_URL}.`);
       setExecutionMeta({
         status: 'error',
         executionTime: 0,
@@ -332,14 +333,14 @@ export default function App() {
                 wsStatus === 'connected'
                   ? 'rgba(16, 185, 129, 0.15)'
                   : wsStatus === 'reconnecting'
-                  ? 'rgba(245, 158, 11, 0.15)'
-                  : 'rgba(244, 63, 94, 0.15)',
+                    ? 'rgba(245, 158, 11, 0.15)'
+                    : 'rgba(244, 63, 94, 0.15)',
               color:
                 wsStatus === 'connected'
                   ? '#34d399'
                   : wsStatus === 'reconnecting'
-                  ? '#fbbf24'
-                  : '#f87171'
+                    ? '#fbbf24'
+                    : '#f87171'
             }}
             title={wsStatus === 'connected' ? 'WebSocket live' : 'Attempting to reconnect...'}
           >
@@ -350,8 +351,8 @@ export default function App() {
                   wsStatus === 'connected'
                     ? '#10b981'
                     : wsStatus === 'reconnecting'
-                    ? '#f59e0b'
-                    : '#f43f5e',
+                      ? '#f59e0b'
+                      : '#f43f5e',
                 animation: wsStatus === 'connected' ? 'pulse-dot 2s infinite' : 'none'
               }}
             />
@@ -508,7 +509,7 @@ export default function App() {
             <div style={styles.consoleTitleGroup}>
               <span style={styles.consoleIcon}>🖥️</span>
               <span style={styles.consoleTitle}>TERMINAL / OUTPUT</span>
-              
+
               {executionMeta?.status && (
                 <span
                   style={{
@@ -517,27 +518,27 @@ export default function App() {
                       executionMeta.status === 'running'
                         ? 'rgba(59, 130, 246, 0.2)'
                         : executionMeta.status === 'success'
-                        ? 'rgba(16, 185, 129, 0.2)'
-                        : 'rgba(244, 63, 94, 0.2)',
+                          ? 'rgba(16, 185, 129, 0.2)'
+                          : 'rgba(244, 63, 94, 0.2)',
                     color:
                       executionMeta.status === 'running'
                         ? '#60a5fa'
                         : executionMeta.status === 'success'
-                        ? '#34d399'
-                        : '#f87171',
+                          ? '#34d399'
+                          : '#f87171',
                     borderColor:
                       executionMeta.status === 'running'
                         ? '#3b82f6'
                         : executionMeta.status === 'success'
-                        ? '#10b981'
-                        : '#f43f5e'
+                          ? '#10b981'
+                          : '#f43f5e'
                   }}
                 >
                   {executionMeta.status === 'running'
                     ? 'RUNNING'
                     : executionMeta.status === 'success'
-                    ? 'SUCCESS (0)'
-                    : 'ERROR'}
+                      ? 'SUCCESS (0)'
+                      : 'ERROR'}
                 </span>
               )}
 
